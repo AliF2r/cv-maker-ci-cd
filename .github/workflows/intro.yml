@@ -55,6 +55,8 @@ jobs :
 
   snapshot:
     runs-on: ubuntu-latest
+    runs :
+      using: 'node12'
     needs: build
 
     steps:
