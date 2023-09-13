@@ -64,8 +64,7 @@ jobs :
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          version: 16
-          run_install: false
+          node-version: 16
 
       - name: Install Dependencies
         run: npm install
@@ -78,8 +77,8 @@ jobs :
         with:
           name: snapshots
           path: |
-            ./static/cv.pdf
-            ./static/cv.mhtml
+            ./gen/cv.pdf
+            ./gen/cv.mhtml
 
   deploy:
     runs-on : ubuntu-latest
