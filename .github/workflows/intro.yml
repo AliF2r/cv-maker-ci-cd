@@ -58,27 +58,50 @@ jobs :
     needs: build
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js 16
-        uses: actions/setup-node@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2.4.0
         with:
-          node-version: 16
+          version: 8
+          run_install: false
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Run Snapshot Script
-        run: node snapshot.js
-
-      - name: Upload Snapshots
-        uses: actions/upload-artifact@v2
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
         with:
-          name: snapshots
-          path: |
-            ./gen/cv.pdf
-            ./gen/cv.mhtml
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build the app
+        run: pnpm run build
+
+
+      - name: Test the connection
+        run: |
+          pnpm run preview &
+          sleep 5
+          curl -I http://localhost:4173
+
+      - name : Snapshot
+        run : |
+          mkdir gen
+          docker run -i --init --cap-add=SYS_ADMIN --network host -v ./gen:/home/pptruser/gen ghcr.io/puppeteer/puppeteer:latest node -e "$(cat snapshot.js)" http://localhost:4173 ./gen mv gen/* static/
+
+      - name : Push to git
+        run : |
+          git add static
+          git commit -m "Snapshot ${{ github.sha }}"
+          git push
 
   deploy:
     runs-on : ubuntu-latest
