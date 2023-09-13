@@ -8,6 +8,9 @@ env:
 
 on :
   push :
+    path-ignore :
+      - '**.pdf'
+      - '**.mhtml'
 
 
 jobs :
@@ -94,8 +97,13 @@ jobs :
 
       - name : Snapshot
         run : |
-          mkdir gen
+          mkdir -m 777 gen
           docker run -i --init --cap-add=SYS_ADMIN --network host -v ./gen:/home/pptruser/gen ghcr.io/puppeteer/puppeteer:latest node -e "$(cat snapshot.js)" http://localhost:4173 ./gen mv gen/* static/
+
+      - name : Git config
+        run : |
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@user.noreply.github.com"
 
       - name : Push to git
         run : |
